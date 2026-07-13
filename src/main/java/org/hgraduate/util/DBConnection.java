@@ -1,4 +1,4 @@
-package org.hgraduate.config;
+package org.hgraduate.util;
 
 public class DBConnection {
 }
