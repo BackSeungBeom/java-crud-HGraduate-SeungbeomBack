@@ -1,0 +1,55 @@
+name: Close linked issue on develop merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - develop   # develop으로 머지된 PR만 감지
+
+jobs:
+  close-issue:
+    if: github.event.pull_request.merged == true   # 실제로 merge된 경우만 (그냥 close는 제외)
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Extract and close linked issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body || "";
+            const title = context.payload.pull_request.title || "";
+            const text = body + "\n" + title;
+
+            // Closes #12, Fixes #12, Resolves #12 등 패턴 인식
+            const regex = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+#(\d+)/gi;
+            const matches = [...text.matchAll(regex)];
+
+            if (matches.length === 0) {
+              console.log("연결된 이슈 없음");
+              return;
+            }
+
+            for (const match of matches) {
+              const issueNumber = match[2];
+              try {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  state: "closed"
+                });
+                console.log(`이슈 #${issueNumber} 닫음`);
+
+                // 선택: 코멘트 남기기
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body: `연결된 PR #${context.payload.pull_request.number} 이(가) develop 브랜치에 머지되어 이 이슈를 자동으로 닫았습니다.`
+                });
+              } catch (err) {
+                console.log(`이슈 #${issueNumber} 닫기 실패: ${err.message}`);
+              }
+            }
