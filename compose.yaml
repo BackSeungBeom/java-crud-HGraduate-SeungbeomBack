@@ -1,10 +1,17 @@
 services:
   mariadb:
-    image: 'mariadb:latest'
+    image: mariadb:latest
+    container_name: java-crud-mariadb
+    restart: always
     environment:
-      - 'MARIADB_DATABASE=mydatabase'
-      - 'MARIADB_PASSWORD=secret'
-      - 'MARIADB_ROOT_PASSWORD=verysecret'
-      - 'MARIADB_USER=myuser'
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: crud_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
     ports:
-      - '3306'
+      - "3308:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+volumes:
+  mariadb_data:
